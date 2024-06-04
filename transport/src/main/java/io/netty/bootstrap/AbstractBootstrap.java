@@ -232,6 +232,8 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
      */
     public ChannelFuture bind() {
         validate();
+
+        // 服务端绑定在一个端口上监听，接受新连接
         SocketAddress localAddress = this.localAddress;
         if (localAddress == null) {
             throw new IllegalStateException("localAddress not set");
@@ -269,6 +271,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     }
 
     private ChannelFuture doBind(final SocketAddress localAddress) {
+        // 创建一个channel，并且向selector中注册
         final ChannelFuture regFuture = initAndRegister();
         final Channel channel = regFuture.channel();
         if (regFuture.cause() != null) {
@@ -307,7 +310,10 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     final ChannelFuture initAndRegister() {
         Channel channel = null;
         try {
+            // 基于channel工厂创建一个channel对象。channelFactory是一个抽象，用户可以自定义所创建channel的类型
+            // 一般情况下是ReflectiveChannelFactory，基于用户指定的channel类反射创建对应的channel实例
             channel = channelFactory.newChannel();
+            // 对channel进行初始化
             init(channel);
         } catch (Throwable t) {
             if (channel != null) {
