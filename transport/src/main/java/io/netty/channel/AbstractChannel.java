@@ -474,15 +474,20 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 return;
             }
 
+            // 将当前channel与对应的eventLoop建立连接
             AbstractChannel.this.eventLoop = eventLoop;
 
+            // 判断当前线程Thread.currentThread与eventLoop的现成是不是同一个
             if (eventLoop.inEventLoop()) {
                 register0(promise);
             } else {
+                // demo里第一次建立，当前线程是启动main方法的主线程，与eventLoop的线程不是一个
+                // 所以通过eventLoop的execute方法将对应任务(task)交给eventLoop对应的线程处理
                 try {
                     eventLoop.execute(new Runnable() {
                         @Override
                         public void run() {
+                            // 交给eventLoop对应的线程执行注册逻辑
                             register0(promise);
                         }
                     });

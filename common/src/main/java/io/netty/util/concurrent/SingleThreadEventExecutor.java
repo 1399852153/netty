@@ -833,10 +833,14 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
     private void execute(Runnable task, boolean immediate) {
         boolean inEventLoop = inEventLoop();
+        // 将对应的任务放入taskQueue中
         addTask(task);
         if (!inEventLoop) {
+            // 如果执行方法的当前线程不是eventLoop对应的线程，说明eventLoop对应的线程没有启动
             startThread();
+
             if (isShutdown()) {
+                // 处理优雅关闭的逻辑
                 boolean reject = false;
                 try {
                     if (removeTask(task)) {
@@ -952,6 +956,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
             if (STATE_UPDATER.compareAndSet(this, ST_NOT_STARTED, ST_STARTED)) {
                 boolean success = false;
                 try {
+                    // 主要逻辑
                     doStartThread();
                     success = true;
                 } finally {
@@ -983,9 +988,12 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
     private void doStartThread() {
         assert thread == null;
+
+        // 交给eventLoop对应的线程池处理(jdk的Executor)
         executor.execute(new Runnable() {
             @Override
             public void run() {
+                // 线程池中的线程与当前eventLoop绑定
                 thread = Thread.currentThread();
                 if (interrupted) {
                     thread.interrupt();
@@ -994,6 +1002,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                 boolean success = false;
                 updateLastExecutionTime();
                 try {
+                    // 进入当前eventLoop线程的主循环，正常情况下run方法内是无限循环不会返回的
                     SingleThreadEventExecutor.this.run();
                     success = true;
                 } catch (Throwable t) {

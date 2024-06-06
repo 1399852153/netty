@@ -273,6 +273,8 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     private ChannelFuture doBind(final SocketAddress localAddress) {
         // 创建一个channel，并且向selector中注册
         final ChannelFuture regFuture = initAndRegister();
+
+        // 执行完之后，bossGroup中对应的一个线程已经在执行关于select的无限循环，并与channel进行了绑定关系
         final Channel channel = regFuture.channel();
         if (regFuture.cause() != null) {
             return regFuture;
@@ -326,8 +328,10 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
             return new DefaultChannelPromise(new FailedChannel(), GlobalEventExecutor.INSTANCE).setFailure(t);
         }
 
+        // 将channel注册到配置的eventGroup中(bossGroup,用来accept连接)
         ChannelFuture regFuture = config().group().register(channel);
         if (regFuture.cause() != null) {
+            // 注册失败了，关闭掉channel
             if (channel.isRegistered()) {
                 channel.close();
             } else {
